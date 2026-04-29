@@ -18,6 +18,8 @@ interface PasswordDialogProps {
     onSave: (password: string) => void;
     title?: string;
     description?: string;
+    inputType?: React.HTMLInputTypeAttribute;
+    placeholder?: string;
 }
 
 export function PasswordDialog({
@@ -25,7 +27,9 @@ export function PasswordDialog({
     onOpenChange,
     onSave,
     title = '配置密码',
-    description
+    description,
+    inputType = 'password',
+    placeholder = '输入密码'
 }: PasswordDialogProps) {
     const [currentPassword, setCurrentPassword] = React.useState('');
     const inputRef = React.useRef<HTMLInputElement>(null);
@@ -56,8 +60,8 @@ export function PasswordDialog({
                         <Input
                             ref={inputRef}
                             id='password-input'
-                            type='password'
-                            placeholder='输入密码'
+                            type={inputType}
+                            placeholder={placeholder}
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             className='col-span-1 border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
@@ -75,7 +79,7 @@ export function PasswordDialog({
                         type='button'
                         onClick={handleSave}
                         disabled={!currentPassword.trim()}
-                        className='bg-white px-6 text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed'>
+                        className='bg-white px-6 text-black hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50'>
                         保存
                     </Button>
                 </DialogFooter>

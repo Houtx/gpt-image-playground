@@ -4,13 +4,17 @@ import { EditingForm, type EditingFormData } from '@/components/editing-form';
 import { GenerationForm, type GenerationFormData } from '@/components/generation-form';
 import { HistoryPanel } from '@/components/history-panel';
 import { ImageOutput } from '@/components/image-output';
+import { NativeSettingsDialog } from '@/components/native-settings-dialog';
 import { PasswordDialog } from '@/components/password-dialog';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { calculateApiCost, type CostDetails, type GptImageModel } from '@/lib/cost-utils';
 import { getPresetDimensions } from '@/lib/size-utils';
 import { db, type ImageRecord } from '@/lib/db';
+import { runNativeImageRequest } from '@/lib/native-openai';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { KeyRound } from 'lucide-react';
 import * as React from 'react';
 
 type HistoryImage = {
@@ -41,13 +45,16 @@ type DrawnPoint = {
 const MAX_EDIT_IMAGES = 10;
 
 const explicitModeClient = process.env.NEXT_PUBLIC_IMAGE_STORAGE_MODE;
+const isCapacitorRuntime = process.env.NEXT_PUBLIC_APP_RUNTIME === 'capacitor';
 
 const vercelEnvClient = process.env.NEXT_PUBLIC_VERCEL_ENV;
 const isOnVercelClient = vercelEnvClient === 'production' || vercelEnvClient === 'preview';
 
 let effectiveStorageModeClient: 'fs' | 'indexeddb';
 
-if (explicitModeClient === 'fs') {
+if (isCapacitorRuntime) {
+    effectiveStorageModeClient = 'indexeddb';
+} else if (explicitModeClient === 'fs') {
     effectiveStorageModeClient = 'fs';
 } else if (explicitModeClient === 'indexeddb') {
     effectiveStorageModeClient = 'indexeddb';
@@ -82,6 +89,9 @@ export default function HomePage() {
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
     const [passwordDialogContext, setPasswordDialogContext] = React.useState<'initial' | 'retry'>('initial');
     const [lastApiCallArgs, setLastApiCallArgs] = React.useState<[GenerationFormData | EditingFormData] | null>(null);
+    const [nativeApiKey, setNativeApiKey] = React.useState<string | null>(null);
+    const [nativeBaseUrl, setNativeBaseUrl] = React.useState<string | null>(null);
+    const [isNativeSettingsDialogOpen, setIsNativeSettingsDialogOpen] = React.useState(false);
     const [skipDeleteConfirmation, setSkipDeleteConfirmation] = React.useState<boolean>(false);
     const [itemToDeleteConfirm, setItemToDeleteConfirm] = React.useState<HistoryMetadata | null>(null);
     const [dialogCheckboxStateSkipConfirm, setDialogCheckboxStateSkipConfirm] = React.useState<boolean>(false);
@@ -177,6 +187,21 @@ export default function HomePage() {
     }, []);
 
     React.useEffect(() => {
+        if (isCapacitorRuntime) {
+            setIsPasswordRequiredByBackend(false);
+            const storedApiKey = localStorage.getItem('nativeOpenAIApiKey');
+            const storedBaseUrl = localStorage.getItem('nativeOpenAIBaseUrl');
+            if (storedApiKey) {
+                setNativeApiKey(storedApiKey);
+            } else {
+                setIsNativeSettingsDialogOpen(true);
+            }
+            if (storedBaseUrl) {
+                setNativeBaseUrl(storedBaseUrl);
+            }
+            return;
+        }
+
         const fetchAuthStatus = async () => {
             try {
                 const response = await fetch('/api/auth-status');
@@ -297,11 +322,119 @@ export default function HomePage() {
         setIsPasswordDialogOpen(true);
     };
 
+    const handleSaveNativeSettings = (settings: { apiKey: string; baseUrl: string }) => {
+        const trimmedApiKey = settings.apiKey.trim();
+        const trimmedBaseUrl = settings.baseUrl.trim().replace(/\/+$/, '');
+        if (!trimmedApiKey) {
+            setError('请先输入 OpenAI API Key。');
+            return;
+        }
+
+        localStorage.setItem('nativeOpenAIApiKey', trimmedApiKey);
+        if (trimmedBaseUrl) {
+            localStorage.setItem('nativeOpenAIBaseUrl', trimmedBaseUrl);
+        } else {
+            localStorage.removeItem('nativeOpenAIBaseUrl');
+        }
+        setNativeApiKey(trimmedApiKey);
+        setNativeBaseUrl(trimmedBaseUrl || null);
+        setError(null);
+        setIsNativeSettingsDialogOpen(false);
+    };
+
     const getMimeTypeFromFormat = (format: string): string => {
         if (format === 'jpeg') return 'image/jpeg';
         if (format === 'webp') return 'image/webp';
 
         return 'image/png';
+    };
+
+    const processImageResult = async (
+        result: { images?: ApiImageResponseItem[]; usage?: Parameters<typeof calculateApiCost>[0] },
+        durationMs: number
+    ) => {
+        if (!result.images || result.images.length === 0) {
+            setLatestImageBatch(null);
+            throw new Error('API response did not contain valid image data or filenames.');
+        }
+
+        let historyQuality: GenerationFormData['quality'] = 'auto';
+        let historyBackground: GenerationFormData['background'] = 'auto';
+        let historyModeration: GenerationFormData['moderation'] = 'auto';
+        let historyOutputFormat: GenerationFormData['output_format'] = 'png';
+        let historyPrompt = '';
+
+        if (mode === 'generate') {
+            historyQuality = genQuality;
+            historyBackground = genBackground;
+            historyModeration = genModeration;
+            historyOutputFormat = genOutputFormat;
+            historyPrompt = genPrompt;
+        } else {
+            historyQuality = editQuality;
+            historyPrompt = editPrompt;
+        }
+
+        const currentModel = mode === 'generate' ? genModel : editModel;
+        const costDetails = calculateApiCost(result.usage, currentModel);
+        const newHistoryEntry: HistoryMetadata = {
+            timestamp: Date.now(),
+            images: result.images.map((img) => ({ filename: img.filename })),
+            storageModeUsed: effectiveStorageModeClient,
+            durationMs,
+            quality: historyQuality,
+            background: historyBackground,
+            moderation: historyModeration,
+            output_format: historyOutputFormat,
+            prompt: historyPrompt,
+            mode,
+            costDetails,
+            model: currentModel
+        };
+
+        let newImageBatchPromises: Promise<{ path: string; filename: string } | null>[] = [];
+        if (effectiveStorageModeClient === 'indexeddb') {
+            newImageBatchPromises = result.images.map(async (img) => {
+                if (!img.b64_json) {
+                    console.warn(`Image ${img.filename} missing b64_json in indexeddb mode.`);
+                    return null;
+                }
+
+                try {
+                    const byteCharacters = atob(img.b64_json);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: getMimeTypeFromFormat(img.output_format) });
+
+                    await db.images.put({ filename: img.filename, blob });
+
+                    const blobUrl = URL.createObjectURL(blob);
+                    blobUrlCacheRef.current.set(img.filename, blobUrl);
+
+                    return { filename: img.filename, path: blobUrl };
+                } catch (dbError) {
+                    console.error(`Error saving blob ${img.filename} to IndexedDB:`, dbError);
+                    setError(`Failed to save image ${img.filename} to local database.`);
+                    return null;
+                }
+            });
+        } else {
+            newImageBatchPromises = result.images
+                .filter((img) => !!img.path)
+                .map((img) => Promise.resolve({ path: img.path!, filename: img.filename }));
+        }
+
+        const processedImages = (await Promise.all(newImageBatchPromises)).filter(Boolean) as {
+            path: string;
+            filename: string;
+        }[];
+
+        setLatestImageBatch(processedImages);
+        setImageOutputView(processedImages.length > 1 ? 'grid' : 0);
+        setHistory((prevHistory) => [newHistoryEntry, ...prevHistory]);
     };
 
     const handleApiCall = async (formData: GenerationFormData | EditingFormData) => {
@@ -372,6 +505,18 @@ export default function HomePage() {
         }
 
         try {
+            if (isCapacitorRuntime) {
+                if (!nativeApiKey) {
+                    setIsNativeSettingsDialogOpen(true);
+                    throw new Error('请先配置 OpenAI API Key。');
+                }
+
+                const result = await runNativeImageRequest(apiFormData, nativeApiKey, nativeBaseUrl);
+                durationMs = Date.now() - startTime;
+                await processImageResult(result, durationMs);
+                return;
+            }
+
             const response = await fetch('/api/images', {
                 method: 'POST',
                 body: apiFormData
@@ -874,6 +1019,13 @@ export default function HomePage() {
                         : '请输入后端配置的访问密码。'
                 }
             />
+            <NativeSettingsDialog
+                isOpen={isNativeSettingsDialogOpen}
+                onOpenChange={setIsNativeSettingsDialogOpen}
+                onSave={handleSaveNativeSettings}
+                initialApiKey={nativeApiKey}
+                initialBaseUrl={nativeBaseUrl}
+            />
             <div className='w-full max-w-screen-2xl space-y-4 md:space-y-5'>
                 <div className='app-topbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                     <div className='min-w-0'>
@@ -885,7 +1037,18 @@ export default function HomePage() {
                             在一个工作区中生成、编辑、查看并复用 AI 图片。
                         </p>
                     </div>
-                    <div className='flex shrink-0 items-center justify-start sm:justify-end'>
+                    <div className='flex shrink-0 items-center justify-start gap-2 sm:justify-end'>
+                        {isCapacitorRuntime && (
+                            <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setIsNativeSettingsDialogOpen(true)}
+                                className='gap-2'>
+                                <KeyRound className='size-4' />
+                                接口设置
+                            </Button>
+                        )}
                         <ThemeToggle />
                     </div>
                 </div>
@@ -977,7 +1140,7 @@ export default function HomePage() {
                             />
                         </div>
                     </div>
-                    <div className='flex h-[58svh] min-h-[360px] max-h-[620px] flex-col sm:h-[64vh] sm:min-h-[520px] lg:col-span-1 lg:h-[72vh] lg:min-h-[620px] lg:max-h-none'>
+                    <div className='flex min-h-[360px] flex-col lg:col-span-1 lg:h-[72vh] lg:min-h-[620px] lg:max-h-none'>
                         {error && (
                             <Alert variant='destructive' className='mb-4 border-destructive/40 bg-destructive/10 text-destructive'>
                                 <AlertTitle>閿欒</AlertTitle>

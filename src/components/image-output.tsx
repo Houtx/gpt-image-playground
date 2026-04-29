@@ -66,8 +66,8 @@ export function ImageOutput({
 
     return (
         <>
-            <div className='app-panel flex h-full min-h-[300px] w-full flex-col items-center justify-between gap-3 overflow-hidden rounded-lg p-3 sm:gap-4 sm:p-4'>
-                <div className='relative flex h-full w-full flex-grow items-center justify-center overflow-hidden'>
+            <div className='app-panel flex min-h-[360px] w-full flex-col items-center justify-between gap-3 overflow-hidden rounded-lg p-3 sm:gap-4 sm:p-4 lg:h-full lg:min-h-[300px]'>
+                <div className='relative flex min-h-[280px] w-full flex-grow items-center justify-center overflow-hidden lg:h-full lg:min-h-0'>
                     {isLoading ? (
                         streamingPreviewImages && streamingPreviewImages.size > 0 ? (
                             <div className='relative flex h-full w-full items-center justify-center'>
