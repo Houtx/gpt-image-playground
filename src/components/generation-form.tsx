@@ -200,19 +200,19 @@ export function GenerationForm({
             <CardHeader className='flex items-start justify-between border-b border-white/10 pb-4'>
                 <div>
                     <div className='flex items-center'>
-                        <CardTitle className='py-1 text-lg font-medium text-white'>Generate Image</CardTitle>
+                        <CardTitle className='py-1 text-lg font-medium text-white'>生成图片</CardTitle>
                         {isPasswordRequiredByBackend && (
                             <Button
                                 variant='ghost'
                                 size='icon'
                                 onClick={onOpenPasswordDialog}
                                 className='ml-2 text-white/60 hover:text-white'
-                                aria-label='Configure Password'>
+                                aria-label='配置密码'>
                                 {clientPasswordHash ? <Lock className='h-4 w-4' /> : <LockOpen className='h-4 w-4' />}
                             </Button>
                         )}
                     </div>
-                    <CardDescription className='mt-1 text-white/60'>Create a new image from a text prompt.</CardDescription>
+                    <CardDescription className='mt-1 text-white/60'>根据文本提示词创建新图片。</CardDescription>
                 </div>
                 <ModeToggle currentMode={currentMode} onModeChange={onModeChange} />
             </CardHeader>
@@ -227,7 +227,7 @@ export function GenerationForm({
                                 <SelectTrigger
                                     id='model-select'
                                     className='w-[180px] rounded-md border border-white/20 bg-black text-white focus:border-white/50 focus:ring-white/50'>
-                                    <SelectValue placeholder='Select model' />
+                                    <SelectValue placeholder='选择模型' />
                                 </SelectTrigger>
                                 <SelectContent className='border-white/20 bg-black text-white'>
                                     <SelectItem value='gpt-image-2' className='focus:bg-white/10'>
@@ -256,15 +256,15 @@ export function GenerationForm({
                                         />
                                         <Label
                                             htmlFor='enable-streaming'
-                                            className={`text-sm ${n[0] > 1 ? 'cursor-not-allowed text-white/40' : 'cursor-pointer text-white/80'}`}>
+                                            className={`text-sm ${n[0] > 1 ? 'cursor-not-allowed text-white/40' : '无效'}`}>
                                             Enable Streaming
                                         </Label>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className='max-w-[250px]'>
                                     {n[0] > 1
-                                        ? 'Streaming is only supported when generating a single image (n=1).'
-                                        : 'Shows partial preview images as they are generated, providing a more interactive experience.'}
+                                        ? '流式预览仅支持生成单张图片（n=1）。'
+                                        : '生成过程中显示阶段性预览图，便于及时判断效果。'}
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -273,13 +273,13 @@ export function GenerationForm({
                     {enableStreaming && (
                         <div className='space-y-3'>
                             <div className='flex items-center gap-2'>
-                                <Label className='text-white'>Preview Images</Label>
+                                <Label className='text-white'>预览图数量</Label>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <HelpCircle className='h-4 w-4 cursor-help text-white/40 hover:text-white/60' />
                                     </TooltipTrigger>
                                     <TooltipContent className='max-w-[250px]'>
-                                        Each preview image adds ~$0.003 to the cost (100 additional output tokens).
+                                        每张预览图会额外消耗约 100 个输出 token，成本约增加 $0.003。
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
@@ -328,7 +328,7 @@ export function GenerationForm({
                         </Label>
                         <Textarea
                             id='prompt'
-                            placeholder='e.g., A photorealistic cat astronaut floating in space'
+                            placeholder='例如：一只写实风格的宇航员猫漂浮在太空中'
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             required
@@ -354,18 +354,18 @@ export function GenerationForm({
                     </div>
 
                     <div className='space-y-3'>
-                        <Label className='block text-white'>Size</Label>
+                        <Label className='block text-white'>尺寸</Label>
                         <RadioGroup
                             value={size}
                             onValueChange={(value) => setSize(value as GenerationFormData['size'])}
                             disabled={isLoading}
                             className='flex flex-wrap gap-x-5 gap-y-3'>
-                            <RadioItemWithIcon value='auto' id='size-auto' label='Auto' Icon={Sparkles} />
+                            <RadioItemWithIcon value='auto' id='size-auto' label='自动' Icon={Sparkles} />
                             {isGptImage2 && (
                                 <RadioItemWithIcon
                                     value='custom'
                                     id='size-custom'
-                                    label='Custom'
+                                    label='自定义'
                                     Icon={SquareDashed}
                                 />
                             )}
@@ -375,7 +375,7 @@ export function GenerationForm({
                                         <RadioItemWithIcon
                                             value='square'
                                             id='size-square'
-                                            label='Square'
+                                            label='正方形'
                                             Icon={Square}
                                         />
                                     </div>
@@ -388,7 +388,7 @@ export function GenerationForm({
                                         <RadioItemWithIcon
                                             value='landscape'
                                             id='size-landscape'
-                                            label='Landscape'
+                                            label='横向'
                                             Icon={RectangleHorizontal}
                                         />
                                     </div>
@@ -401,7 +401,7 @@ export function GenerationForm({
                                         <RadioItemWithIcon
                                             value='portrait'
                                             id='size-portrait'
-                                            label='Portrait'
+                                            label='竖向'
                                             Icon={RectangleVertical}
                                         />
                                     </div>
@@ -447,51 +447,50 @@ export function GenerationForm({
                                     </div>
                                 </div>
                                 <p className='text-xs text-white/50'>
-                                    {(customWidth * customHeight).toLocaleString()} pixels (
-                                    {((customWidth * customHeight) / 8_294_400 * 100).toFixed(1)}% of max) ·{' '}
+                                    {(customWidth * customHeight).toLocaleString()} 像素（
+                                    {((customWidth * customHeight) / 8_294_400 * 100).toFixed(1)}% 上限）·{' '}
                                     {customWidth > 0 && customHeight > 0
-                                        ? `${(Math.max(customWidth, customHeight) / Math.min(customWidth, customHeight)).toFixed(2)}:1 ratio`
+                                        ? `${(Math.max(customWidth, customHeight) / Math.min(customWidth, customHeight)).toFixed(2)}:1 比例`
                                         : '—'}
                                 </p>
                                 {!customSizeValidation.valid && (
                                     <p className='text-xs text-red-400'>{customSizeValidation.reason}</p>
                                 )}
                                 <p className='text-xs text-white/40'>
-                                    Constraints: multiples of 16, max edge 3840px, aspect ratio ≤ 3:1, 655,360 to
-                                    8,294,400 total pixels.
+                                    约束：宽高必须是 16 的倍数，单边最大 3840px，长宽比不超过 3:1，总像素在 655,360 到 8,294,400 之间。
                                 </p>
                             </div>
                         )}
                     </div>
 
                     <div className='space-y-3'>
-                        <Label className='block text-white'>Quality</Label>
+                        <Label className='block text-white'>质量</Label>
                         <RadioGroup
                             value={quality}
                             onValueChange={(value) => setQuality(value as GenerationFormData['quality'])}
                             disabled={isLoading}
                             className='flex flex-wrap gap-x-5 gap-y-3'>
-                            <RadioItemWithIcon value='auto' id='quality-auto' label='Auto' Icon={Sparkles} />
-                            <RadioItemWithIcon value='low' id='quality-low' label='Low' Icon={Tally1} />
-                            <RadioItemWithIcon value='medium' id='quality-medium' label='Medium' Icon={Tally2} />
-                            <RadioItemWithIcon value='high' id='quality-high' label='High' Icon={Tally3} />
+                            <RadioItemWithIcon value='auto' id='quality-auto' label='自动' Icon={Sparkles} />
+                            <RadioItemWithIcon value='low' id='quality-low' label='低' Icon={Tally1} />
+                            <RadioItemWithIcon value='medium' id='quality-medium' label='中' Icon={Tally2} />
+                            <RadioItemWithIcon value='high' id='quality-high' label='高' Icon={Tally3} />
                         </RadioGroup>
                     </div>
 
                     {!isGptImage2 && (
                         <div className='space-y-3'>
-                            <Label className='block text-white'>Background</Label>
+                            <Label className='block text-white'>背景</Label>
                             <RadioGroup
                                 value={background}
                                 onValueChange={(value) => setBackground(value as GenerationFormData['background'])}
                                 disabled={isLoading}
                                 className='flex flex-wrap gap-x-5 gap-y-3'>
-                                <RadioItemWithIcon value='auto' id='bg-auto' label='Auto' Icon={Sparkles} />
-                                <RadioItemWithIcon value='opaque' id='bg-opaque' label='Opaque' Icon={BrickWall} />
+                                <RadioItemWithIcon value='auto' id='bg-auto' label='自动' Icon={Sparkles} />
+                                <RadioItemWithIcon value='opaque' id='bg-opaque' label='不透明' Icon={BrickWall} />
                                 <RadioItemWithIcon
                                     value='transparent'
                                     id='bg-transparent'
-                                    label='Transparent'
+                                    label='透明'
                                     Icon={Eraser}
                                 />
                             </RadioGroup>
@@ -499,7 +498,7 @@ export function GenerationForm({
                     )}
 
                     <div className='space-y-3'>
-                        <Label className='block text-white'>Output Format</Label>
+                        <Label className='block text-white'>输出格式</Label>
                         <RadioGroup
                             value={outputFormat}
                             onValueChange={(value) => setOutputFormat(value as GenerationFormData['output_format'])}
@@ -530,14 +529,14 @@ export function GenerationForm({
                     )}
 
                     <div className='space-y-3'>
-                        <Label className='block text-white'>Moderation Level</Label>
+                        <Label className='block text-white'>审核强度</Label>
                         <RadioGroup
                             value={moderation}
                             onValueChange={(value) => setModeration(value as GenerationFormData['moderation'])}
                             disabled={isLoading}
                             className='flex flex-wrap gap-x-5 gap-y-3'>
-                            <RadioItemWithIcon value='auto' id='mod-auto' label='Auto' Icon={ShieldCheck} />
-                            <RadioItemWithIcon value='low' id='mod-low' label='Low' Icon={ShieldAlert} />
+                            <RadioItemWithIcon value='auto' id='mod-auto' label='自动' Icon={ShieldCheck} />
+                            <RadioItemWithIcon value='low' id='mod-low' label='低' Icon={ShieldAlert} />
                         </RadioGroup>
                     </div>
                 </CardContent>

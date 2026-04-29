@@ -57,7 +57,7 @@ if (explicitModeClient === 'fs') {
     effectiveStorageModeClient = 'fs';
 }
 console.log(
-    `Client Effective Storage Mode: ${effectiveStorageModeClient} (Explicit: ${explicitModeClient || 'unset'}, Vercel Env: ${vercelEnvClient || 'N/A'})`
+    `客户端存储模式： ${effectiveStorageModeClient} (显式配置： ${explicitModeClient || '未设置'}, Vercel 环境： ${vercelEnvClient || 'N/A'})`
 );
 
 type ApiImageResponseItem = {
@@ -877,12 +877,12 @@ export default function HomePage() {
             <div className='w-full max-w-screen-2xl space-y-5'>
                 <div className='app-topbar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
                     <div className='min-w-0'>
-                        <p className='text-sm font-medium text-primary'>AI Image Studio</p>
+                        <p className='text-sm font-medium text-primary'>AI 图像工作台</p>
                         <h1 className='mt-1 text-2xl font-semibold tracking-normal text-foreground md:text-3xl'>
                             GPT Image Playground
                         </h1>
                         <p className='mt-1 max-w-2xl text-sm text-muted-foreground'>
-                            Create, edit, review, and reuse generated images in one focused workspace.
+                            在一个工作区中生成、编辑、查看并复用 AI 图片。
                         </p>
                     </div>
                     <div className='flex shrink-0 items-center justify-start sm:justify-end'>
@@ -988,7 +988,7 @@ export default function HomePage() {
                             imageBatch={latestImageBatch}
                             viewMode={imageOutputView}
                             onViewChange={setImageOutputView}
-                            altText='Generated image output'
+                            altText='生成图片输出'
                             isLoading={isLoading || isSendingToEdit}
                             onSendToEdit={handleSendToEdit}
                             currentMode={mode}

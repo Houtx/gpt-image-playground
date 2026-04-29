@@ -33,7 +33,7 @@ export function ImageOutput({
     imageBatch,
     viewMode,
     onViewChange,
-    altText = 'Generated image output',
+    altText = '生成图片输出',
     isLoading,
     onSendToEdit,
     currentMode,
@@ -67,7 +67,7 @@ export function ImageOutput({
                                 return (
                                     <Image
                                         src={dataUrl}
-                                        alt='Streaming preview'
+                                        alt='流式预览'
                                         width={512}
                                         height={512}
                                         className='max-h-full max-w-full object-contain'
@@ -78,14 +78,14 @@ export function ImageOutput({
                             {/* Overlay loader at bottom center */}
                             <div className='absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border bg-popover/85 px-3 py-1.5 text-popover-foreground shadow-sm backdrop-blur'>
                                 <Loader2 className='h-4 w-4 animate-spin' />
-                                <p className='text-sm'>正在流式输出...</p>
+                                <p className='text-sm'>正在生成预览...</p>
                             </div>
                         </div>
                     ) : currentMode === 'edit' && baseImagePreviewUrl ? (
                         <div className='relative flex h-full w-full items-center justify-center'>
                             <Image
                                 src={baseImagePreviewUrl}
-                                alt='Base image for editing'
+                                alt='编辑基准图'
                                 fill
                                 style={{ objectFit: 'contain' }}
                                 className='blur-md filter'
@@ -93,13 +93,13 @@ export function ImageOutput({
                             />
                             <div className='absolute inset-0 flex flex-col items-center justify-center bg-background/70 text-muted-foreground backdrop-blur-sm'>
                                 <Loader2 className='mb-2 h-8 w-8 animate-spin' />
-                                <p>正在编辑图片...</p>
+                                <p>暂无图片输出。</p>
                             </div>
                         </div>
                     ) : (
                         <div className='flex flex-col items-center justify-center text-muted-foreground'>
                             <Loader2 className='mb-2 h-8 w-8 animate-spin' />
-                            <p>正在生成图片...</p>
+                            <p>暂无图片输出。</p>
                         </div>
                     )
                 ) : imageBatch && imageBatch.length > 0 ? (
@@ -112,7 +112,7 @@ export function ImageOutput({
                                     className='relative aspect-square overflow-hidden rounded border border-border bg-muted/30'>
                                     <Image
                                         src={img.path}
-                                        alt={`Generated image ${index + 1}`}
+                                        alt={`生成图片 ${index + 1}`}
                                         fill
                                         style={{ objectFit: 'contain' }}
                                         sizes='(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
@@ -132,12 +132,12 @@ export function ImageOutput({
                         />
                     ) : (
                         <div className='text-center text-muted-foreground'>
-                            <p>显示图片时出错。</p>
+                            <p>暂无图片输出。</p>
                         </div>
                     )
                 ) : (
                     <div className='text-center text-muted-foreground'>
-                        <p>生成的图片将显示在这里。</p>
+                        <p>暂无图片输出。</p>
                     </div>
                 )}
             </div>
@@ -155,9 +155,8 @@ export function ImageOutput({
                                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                             )}
                             onClick={() => onViewChange('grid')}
-                            aria-label='Show grid view'>
-                            <Grid className='h-4 w-4' />
-                        </Button>
+                            aria-label='显示宫格视图'>
+                            <Grid className='h-4 w-4' />发送到编辑</Button>
                         {imageBatch.map((img, index) => (
                             <Button
                                 key={img.filename}
@@ -170,10 +169,10 @@ export function ImageOutput({
                                         : 'opacity-60 hover:opacity-100'
                                 )}
                                 onClick={() => onViewChange(index)}
-                                aria-label={`Select image ${index + 1}`}>
+                                aria-label={`选择图片 ${index + 1}`}>
                                 <Image
                                     src={img.path}
-                                    alt={`Thumbnail ${index + 1}`}
+                                    alt={`缩略图 ${index + 1}`}
                                     width={28}
                                     height={28}
                                     className='h-full w-full object-cover'
