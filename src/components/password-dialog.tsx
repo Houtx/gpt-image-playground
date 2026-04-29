@@ -75,7 +75,7 @@ export function PasswordDialog({
                         type='button'
                         onClick={handleSave}
                         disabled={!currentPassword.trim()}
-                        className='bg-white px-6 text-black hover:bg-white/90 disabled:bg-white/10 disabled:text-white/40'>
+                        className='bg-white px-6 text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed'>
                         保存
                     </Button>
                 </DialogFooter>

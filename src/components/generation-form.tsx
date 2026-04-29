@@ -544,7 +544,7 @@ export function GenerationForm({
                     <Button
                         type='submit'
                         disabled={isLoading || !prompt || customSizeInvalid}
-                        className='flex w-full items-center justify-center gap-2 rounded-md bg-white text-black hover:bg-white/90 disabled:bg-white/10 disabled:text-white/40'>
+                        className='flex w-full items-center justify-center gap-2 rounded-md bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed'>
                         {isLoading && <Loader2 className='h-4 w-4 animate-spin' />}
                         {isLoading ? '生成中...' : '生成'}
                     </Button>
