@@ -101,8 +101,8 @@ function HistoryPanelImpl({
 
     return (
         <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
-            <CardHeader className='flex flex-row items-center justify-between gap-4 border-b border-white/10 px-4 py-3'>
-                <div className='flex items-center gap-2'>
+            <CardHeader className='flex flex-col items-start justify-between gap-3 border-b border-white/10 px-3 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4'>
+                <div className='flex min-w-0 flex-wrap items-center gap-2'>
                     <CardTitle className='text-lg font-medium text-white'>历史记录</CardTitle>
                     {totalCost > 0 && (
                         <Dialog open={isTotalCostDialogOpen} onOpenChange={setIsTotalCostDialogOpen}>
@@ -185,13 +185,13 @@ function HistoryPanelImpl({
                     </Button>
                 )}
             </CardHeader>
-            <CardContent className='flex-grow overflow-y-auto p-4'>
+            <CardContent className='flex-grow overflow-y-auto p-3 sm:p-4'>
                 {history.length === 0 ? (
                     <div className='flex h-full items-center justify-center text-white/40'>
                         <p>生成后的图片会显示在这里。</p>
                     </div>
                 ) : (
-                    <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
+                    <div className='grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5'>
                         {[...history].map((item) => {
                             const firstImage = item.images?.[0];
                             const imageCount = item.images?.length ?? 0;
@@ -395,7 +395,7 @@ function HistoryPanelImpl({
                                         <p>
                                             <span className='font-medium text-white/80'>审核：</span> {item.moderation}
                                         </p>
-                                        <div className='mt-2 flex items-center gap-1'>
+                                        <div className='mt-2 flex items-center gap-1.5'>
                                             <Dialog
                                                 open={openPromptDialogTimestamp === itemKey}
                                                 onOpenChange={(isOpen) =>
@@ -405,7 +405,7 @@ function HistoryPanelImpl({
                                                     <Button
                                                         variant='outline'
                                                         size='sm'
-                                                        className='h-6 flex-grow border-white/20 px-2 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white'
+                                                        className='min-h-8 flex-grow border-white/20 px-2 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white sm:h-6 sm:min-h-0'
                                                         onClick={() => setOpenPromptDialogTimestamp(itemKey)}>
                                                         查看提示词
                                                     </Button>
@@ -452,7 +452,7 @@ function HistoryPanelImpl({
                                                 }}>
                                                 <DialogTrigger asChild>
                                                     <Button
-                                                        className='h-6 w-6 bg-red-700/60 text-white hover:bg-red-600/60'
+                                                        className='h-8 w-8 bg-red-700/60 text-white hover:bg-red-600/60 sm:h-6 sm:w-6'
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             onDeleteItemRequest(item);

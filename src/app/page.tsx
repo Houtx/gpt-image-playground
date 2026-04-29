@@ -862,7 +862,7 @@ export default function HomePage() {
     }, []);
 
     return (
-        <main className='app-shell flex min-h-screen flex-col items-center p-4 text-foreground md:p-6 lg:p-8'>
+        <main className='app-shell flex min-h-screen flex-col items-center overflow-x-hidden p-3 text-foreground sm:p-4 md:p-6 lg:p-8'>
             <PasswordDialog
                 isOpen={isPasswordDialogOpen}
                 onOpenChange={setIsPasswordDialogOpen}
@@ -874,11 +874,11 @@ export default function HomePage() {
                         : '请输入后端配置的访问密码。'
                 }
             />
-            <div className='w-full max-w-screen-2xl space-y-5'>
-                <div className='app-topbar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='w-full max-w-screen-2xl space-y-4 md:space-y-5'>
+                <div className='app-topbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                     <div className='min-w-0'>
                         <p className='text-sm font-medium text-primary'>AI 图像工作台</p>
-                        <h1 className='mt-1 text-2xl font-semibold tracking-normal text-foreground md:text-3xl'>
+                        <h1 className='mt-1 text-xl font-semibold tracking-normal text-foreground sm:text-2xl md:text-3xl'>
                             GPT Image Playground
                         </h1>
                         <p className='mt-1 max-w-2xl text-sm text-muted-foreground'>
@@ -889,8 +889,8 @@ export default function HomePage() {
                         <ThemeToggle />
                     </div>
                 </div>
-                <div className='grid grid-cols-1 gap-5 lg:grid-cols-2'>
-                    <div className='relative flex h-[72vh] min-h-[620px] flex-col lg:col-span-1'>
+                <div className='grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5'>
+                    <div className='relative flex h-[calc(100svh-9rem)] min-h-[520px] max-h-[760px] flex-col sm:min-h-[620px] lg:col-span-1 lg:h-[72vh] lg:max-h-none'>
                         <div className={mode === 'generate' ? 'block h-full w-full' : 'hidden'}>
                             <GenerationForm
                                 onSubmit={handleApiCall}
@@ -977,7 +977,7 @@ export default function HomePage() {
                             />
                         </div>
                     </div>
-                    <div className='flex h-[72vh] min-h-[620px] flex-col lg:col-span-1'>
+                    <div className='flex h-[58svh] min-h-[360px] max-h-[620px] flex-col sm:h-[64vh] sm:min-h-[520px] lg:col-span-1 lg:h-[72vh] lg:min-h-[620px] lg:max-h-none'>
                         {error && (
                             <Alert variant='destructive' className='mb-4 border-destructive/40 bg-destructive/10 text-destructive'>
                                 <AlertTitle>閿欒</AlertTitle>
@@ -998,7 +998,7 @@ export default function HomePage() {
                     </div>
                 </div>
 
-                <div className='min-h-[450px]'>
+                <div className='min-h-[360px] md:min-h-[450px]'>
                     <HistoryPanel
                         history={history}
                         onSelectImage={handleHistorySelect}

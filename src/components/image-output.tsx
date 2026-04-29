@@ -66,7 +66,7 @@ export function ImageOutput({
 
     return (
         <>
-            <div className='app-panel flex h-full min-h-[300px] w-full flex-col items-center justify-between gap-4 overflow-hidden rounded-lg p-4'>
+            <div className='app-panel flex h-full min-h-[300px] w-full flex-col items-center justify-between gap-3 overflow-hidden rounded-lg p-3 sm:gap-4 sm:p-4'>
                 <div className='relative flex h-full w-full flex-grow items-center justify-center overflow-hidden'>
                     {isLoading ? (
                         streamingPreviewImages && streamingPreviewImages.size > 0 ? (
@@ -119,7 +119,7 @@ export function ImageOutput({
                             <div
                                 className={`grid ${getGridColsClass(
                                     imageBatch.length
-                                )} max-h-full w-full max-w-full gap-1 p-1`}>
+                                )} max-h-full w-full max-w-full gap-1 p-1 sm:gap-2`}>
                                 {imageBatch.map((img, index) => (
                                     <button
                                         key={img.filename}
@@ -171,9 +171,9 @@ export function ImageOutput({
                     )}
                 </div>
 
-                <div className='flex h-10 w-full shrink-0 items-center justify-center gap-4'>
+                <div className='flex min-h-10 w-full shrink-0 flex-wrap items-center justify-center gap-2 sm:h-10 sm:flex-nowrap sm:gap-4'>
                     {showCarousel && (
-                        <div className='flex items-center gap-1.5 rounded-md border border-border bg-muted p-1'>
+                        <div className='flex max-w-full min-w-0 items-center gap-1.5 overflow-x-auto rounded-md border border-border bg-muted p-1'>
                             <Button
                                 variant='ghost'
                                 size='icon'
@@ -220,7 +220,7 @@ export function ImageOutput({
                         disabled={!canSendToEdit}
                         className={cn(
                             'app-soft-button shrink-0 disabled:pointer-events-none disabled:opacity-50',
-                            showCarousel && viewMode === 'grid' ? 'invisible' : 'visible'
+                            showCarousel && viewMode === 'grid' ? 'hidden sm:invisible' : 'visible'
                         )}>
                         <Send className='mr-2 h-4 w-4' />
                         发送到编辑
@@ -234,7 +234,7 @@ export function ImageOutput({
                         <DialogTitle>图片查看器</DialogTitle>
                         <DialogDescription>放大查看生成图片。</DialogDescription>
                     </DialogHeader>
-                    <div className='flex h-[min(86vh,900px)] w-full items-center justify-center bg-muted/30 p-3 sm:p-6'>
+                    <div className='flex h-[min(82svh,900px)] w-full items-center justify-center bg-muted/30 p-3 sm:h-[min(86vh,900px)] sm:p-6'>
                         {viewerImage && (
                             <Image
                                 src={viewerImage.path}
