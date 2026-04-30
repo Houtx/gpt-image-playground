@@ -74,7 +74,8 @@ function formatNativeError(error: unknown, baseURL?: string | null): string {
 export async function runNativeImageRequest(
     formData: FormData,
     apiKey: string,
-    baseURL?: string | null
+    baseURL?: string | null,
+    onDebug?: (event: { label: string; details?: string }) => void
 ): Promise<NativeImageResponse> {
     if (!apiKey.trim()) {
         throw new Error('请先配置 OpenAI API Key。');
@@ -117,6 +118,18 @@ export async function runNativeImageRequest(
                 params.output_compression = Math.max(0, Math.min(outputCompression, 100));
             }
 
+            onDebug?.({
+                label: '调用 OpenAI images.generate',
+                details: JSON.stringify(
+                    {
+                        baseURL: baseURL?.trim() || process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL || 'official',
+                        ...params,
+                        prompt: `${prompt.slice(0, 120)}${prompt.length > 120 ? '...' : ''}`
+                    },
+                    null,
+                    2
+                )
+            });
             result = await openai.images.generate(params);
         } else if (mode === 'edit') {
             outputFormat = 'png';
@@ -135,7 +148,7 @@ export async function runNativeImageRequest(
             const quality = (formData.get('quality') as OpenAI.Images.ImageEditParams['quality']) || 'auto';
             const maskFile = formData.get('mask');
 
-            result = await openai.images.edit({
+            const params: OpenAI.Images.ImageEditParams = {
                 model,
                 prompt,
                 image: imageFiles,
@@ -143,7 +156,31 @@ export async function runNativeImageRequest(
                 size: size === 'auto' ? undefined : size,
                 quality: quality === 'auto' ? undefined : quality,
                 ...(maskFile instanceof File ? { mask: maskFile } : {})
+            };
+
+            onDebug?.({
+                label: '调用 OpenAI images.edit',
+                details: JSON.stringify(
+                    {
+                        baseURL: baseURL?.trim() || process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL || 'official',
+                        model,
+                        prompt: `${prompt.slice(0, 120)}${prompt.length > 120 ? '...' : ''}`,
+                        imageCount: imageFiles.length,
+                        imageFiles: imageFiles.map((file) => ({
+                            name: file.name,
+                            type: file.type,
+                            size: file.size
+                        })),
+                        n: params.n,
+                        size: params.size,
+                        quality: params.quality,
+                        hasMask: maskFile instanceof File
+                    },
+                    null,
+                    2
+                )
             });
+            result = await openai.images.edit(params);
         } else {
             throw new Error('Invalid mode specified');
         }
@@ -155,6 +192,19 @@ export async function runNativeImageRequest(
     if (!result.data?.length) {
         throw new Error('Failed to retrieve image data from API.');
     }
+
+    onDebug?.({
+        label: '收到 OpenAI 响应',
+        details: JSON.stringify(
+            {
+                imageCount: result.data.length,
+                hasUsage: Boolean(result.usage),
+                usage: result.usage
+            },
+            null,
+            2
+        )
+    });
 
     const timestamp = Date.now();
     return {

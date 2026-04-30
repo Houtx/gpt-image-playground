@@ -196,7 +196,7 @@ export function GenerationForm({
     };
 
     return (
-        <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
+        <Card className='flex w-full flex-col overflow-visible rounded-lg border border-white/10 bg-black lg:h-full lg:overflow-hidden'>
             <CardHeader className='flex items-start justify-between border-b border-white/10 pb-4'>
                 <div>
                     <div className='flex items-center'>
@@ -216,8 +216,8 @@ export function GenerationForm({
                 </div>
                 <ModeToggle currentMode={currentMode} onModeChange={onModeChange} />
             </CardHeader>
-            <form onSubmit={handleSubmit} className='flex h-full flex-1 flex-col overflow-hidden'>
-                <CardContent className='flex-1 space-y-5 overflow-y-auto p-4'>
+            <form onSubmit={handleSubmit} className='flex flex-col lg:h-full lg:flex-1 lg:overflow-hidden'>
+                <CardContent className='space-y-5 p-4 lg:flex-1 lg:overflow-y-auto'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='model-select' className='text-white'>
                             Model

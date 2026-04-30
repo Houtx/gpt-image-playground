@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 const root = process.cwd();
 const apiDir = resolve(root, 'src/app/api');
 const backupDir = resolve(root, '.next-capacitor-api-backup');
+const nextDir = resolve(root, '.next');
 
 function restoreApiDir() {
   if (existsSync(backupDir)) {
@@ -19,6 +20,8 @@ try {
   if (existsSync(backupDir)) {
     restoreApiDir();
   }
+
+  rmSync(nextDir, { recursive: true, force: true });
 
   if (existsSync(apiDir)) {
     cpSync(apiDir, backupDir, { recursive: true });

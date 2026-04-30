@@ -6,6 +6,7 @@ import { HistoryPanel } from '@/components/history-panel';
 import { ImageOutput } from '@/components/image-output';
 import { NativeSettingsDialog } from '@/components/native-settings-dialog';
 import { PasswordDialog } from '@/components/password-dialog';
+import { RequestInspector, type RequestLogEntry } from '@/components/request-inspector';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,15 @@ type ApiImageResponseItem = {
     path?: string;
 };
 
+const stringifyDebugDetails = (value: unknown) => {
+    if (typeof value === 'string') return value;
+    try {
+        return JSON.stringify(value, null, 2);
+    } catch {
+        return String(value);
+    }
+};
+
 export default function HomePage() {
     const [mode, setMode] = React.useState<'generate' | 'edit'>('generate');
     const [isPasswordRequiredByBackend, setIsPasswordRequiredByBackend] = React.useState<boolean | null>(null);
@@ -95,6 +105,7 @@ export default function HomePage() {
     const [skipDeleteConfirmation, setSkipDeleteConfirmation] = React.useState<boolean>(false);
     const [itemToDeleteConfirm, setItemToDeleteConfirm] = React.useState<HistoryMetadata | null>(null);
     const [dialogCheckboxStateSkipConfirm, setDialogCheckboxStateSkipConfirm] = React.useState<boolean>(false);
+    const [requestLogs, setRequestLogs] = React.useState<RequestLogEntry[]>([]);
 
     const allDbImages = useLiveQuery<ImageRecord[] | undefined>(() => db.images.toArray(), []);
 
@@ -152,6 +163,41 @@ export default function HomePage() {
         },
         [allDbImages]
     );
+
+    const addRequestEvent = React.useCallback((requestId: string, label: string, details?: unknown) => {
+        setRequestLogs((current) =>
+            current.map((entry) =>
+                entry.id === requestId
+                    ? {
+                          ...entry,
+                          updatedAt: Date.now(),
+                          events: [
+                              ...entry.events,
+                              {
+                                  at: Date.now(),
+                                  label,
+                                  details: details === undefined ? undefined : stringifyDebugDetails(details)
+                              }
+                          ]
+                      }
+                    : entry
+            )
+        );
+    }, []);
+
+    const updateRequestLog = React.useCallback((requestId: string, patch: Partial<RequestLogEntry>) => {
+        setRequestLogs((current) =>
+            current.map((entry) =>
+                entry.id === requestId
+                    ? {
+                          ...entry,
+                          ...patch,
+                          updatedAt: Date.now()
+                      }
+                    : entry
+            )
+        );
+    }, []);
 
     React.useEffect(() => {
         const cache = blobUrlCacheRef.current;
@@ -504,22 +550,110 @@ export default function HomePage() {
             }
         }
 
+        const requestId = `${startTime}-${Math.random().toString(36).slice(2, 8)}`;
+        const requestSummary =
+            mode === 'generate'
+                ? {
+                      mode,
+                      model: genModel,
+                      promptPreview: `${genPrompt.slice(0, 160)}${genPrompt.length > 160 ? '...' : ''}`,
+                      n: genN[0],
+                      size: apiFormData.get('size'),
+                      quality: genQuality,
+                      outputFormat: genOutputFormat,
+                      background: genBackground,
+                      moderation: genModeration,
+                      streaming: enableStreaming,
+                      partialImages: enableStreaming ? partialImages : undefined
+                  }
+                : {
+                      mode,
+                      model: editModel,
+                      promptPreview: `${editPrompt.slice(0, 160)}${editPrompt.length > 160 ? '...' : ''}`,
+                      n: editN[0],
+                      size: apiFormData.get('size'),
+                      quality: editQuality,
+                      imageCount: editImageFiles.length,
+                      images: editImageFiles.map((file) => ({
+                          name: file.name,
+                          type: file.type,
+                          size: file.size
+                      })),
+                      hasMask: Boolean(editGeneratedMaskFile),
+                      streaming: enableStreaming,
+                      partialImages: enableStreaming ? partialImages : undefined
+                  };
+        const requestLog: RequestLogEntry = {
+            id: requestId,
+            startedAt: startTime,
+            updatedAt: startTime,
+            status: 'pending',
+            mode,
+            runtime: isCapacitorRuntime ? 'apk' : 'web',
+            method: 'POST',
+            url: isCapacitorRuntime
+                ? `${nativeBaseUrl?.trim() || process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL || 'https://api.openai.com/v1'}/images/${mode === 'generate' ? 'generations' : 'edits'}`
+                : '/api/images',
+            baseUrl: isCapacitorRuntime
+                ? nativeBaseUrl?.trim() || process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL || 'https://api.openai.com/v1'
+                : undefined,
+            model: mode === 'generate' ? genModel : editModel,
+            promptPreview: mode === 'generate' ? genPrompt.slice(0, 160) : editPrompt.slice(0, 160),
+            request: requestSummary,
+            events: [
+                {
+                    at: startTime,
+                    label: '已创建请求',
+                    details: stringifyDebugDetails(requestSummary)
+                }
+            ]
+        };
+        setRequestLogs((current) => [requestLog, ...current].slice(0, 30));
+
         try {
             if (isCapacitorRuntime) {
                 if (!nativeApiKey) {
+                    addRequestEvent(requestId, '缺少 APK API Key');
                     setIsNativeSettingsDialogOpen(true);
                     throw new Error('请先配置 OpenAI API Key。');
                 }
 
-                const result = await runNativeImageRequest(apiFormData, nativeApiKey, nativeBaseUrl);
+                addRequestEvent(requestId, '准备发起 APK 本地请求', {
+                    baseUrl: nativeBaseUrl?.trim() || process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL || 'official',
+                    storageMode: effectiveStorageModeClient
+                });
+                const result = await runNativeImageRequest(apiFormData, nativeApiKey, nativeBaseUrl, (event) => {
+                    addRequestEvent(requestId, event.label, event.details);
+                });
                 durationMs = Date.now() - startTime;
+                updateRequestLog(requestId, {
+                    status: 'success',
+                    completedAt: Date.now(),
+                    responseSummary: stringifyDebugDetails({
+                        imageCount: result.images?.length ?? 0,
+                        filenames: result.images?.map((image) => image.filename),
+                        usage: result.usage
+                    })
+                });
+                addRequestEvent(requestId, '开始处理图片结果');
                 await processImageResult(result, durationMs);
+                addRequestEvent(requestId, '图片结果已保存到本地状态');
                 return;
             }
 
+            addRequestEvent(requestId, '发起 fetch 请求', { url: '/api/images' });
             const response = await fetch('/api/images', {
                 method: 'POST',
                 body: apiFormData
+            });
+            updateRequestLog(requestId, {
+                responseStatus: response.status,
+                responseContentType: response.headers.get('content-type')
+            });
+            addRequestEvent(requestId, '已收到响应头', {
+                status: response.status,
+                statusText: response.statusText,
+                contentType: response.headers.get('content-type')
             });
 
             // Check if response is SSE (streaming)
@@ -532,10 +666,14 @@ export default function HomePage() {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
+                addRequestEvent(requestId, '开始读取 SSE 流');
 
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done) break;
+                    if (done) {
+                        addRequestEvent(requestId, 'SSE 流读取结束');
+                        break;
+                    }
 
                     buffer += decoder.decode(value, { stream: true });
 
@@ -550,6 +688,11 @@ export default function HomePage() {
                                 const event = JSON.parse(jsonStr);
 
                                 if (event.type === 'partial_image') {
+                                    addRequestEvent(requestId, '收到局部预览', {
+                                        index: event.index,
+                                        partialImageIndex: event.partial_image_index,
+                                        b64Length: event.b64_json?.length
+                                    });
                                     // Update streaming preview with partial image
                                     const imageIndex = event.index ?? 0;
                                     const dataUrl = `data:image/png;base64,${event.b64_json}`;
@@ -559,8 +702,14 @@ export default function HomePage() {
                                         return newMap;
                                     });
                                 } else if (event.type === 'error') {
+                                    addRequestEvent(requestId, 'SSE 返回错误', event);
                                     throw new Error(event.error || 'Streaming error occurred');
                                 } else if (event.type === 'done') {
+                                    addRequestEvent(requestId, 'SSE 返回完成事件', {
+                                        imageCount: event.images?.length ?? 0,
+                                        filenames: event.images?.map((image: { filename: string }) => image.filename),
+                                        usage: event.usage
+                                    });
                                     // Finalize with all completed images
                                     durationMs = Date.now() - startTime;
 
@@ -668,9 +817,20 @@ export default function HomePage() {
                                         setStreamingPreviewImages(new Map()); // Clear streaming previews
 
                                         setHistory((prevHistory) => [newHistoryEntry, ...prevHistory]);
+                                        updateRequestLog(requestId, {
+                                            status: 'success',
+                                            completedAt: Date.now(),
+                                            responseSummary: stringifyDebugDetails({
+                                                imageCount: event.images.length,
+                                                filenames: event.images.map((image: { filename: string }) => image.filename),
+                                                usage: event.usage
+                                            })
+                                        });
+                                        addRequestEvent(requestId, '图片结果已保存到本地状态');
                                     }
                                 }
                             } catch (parseError) {
+                                addRequestEvent(requestId, '解析 SSE 事件失败', parseError);
                                 console.error('Error parsing SSE event:', parseError);
                             }
                         }
@@ -682,6 +842,12 @@ export default function HomePage() {
 
             // Non-streaming response handling (original code)
             const result = await response.json();
+            addRequestEvent(requestId, '已解析 JSON 响应', {
+                ok: response.ok,
+                imageCount: result.images?.length ?? 0,
+                error: result.error,
+                usage: result.usage
+            });
 
             if (!response.ok) {
                 if (response.status === 401 && isPasswordRequiredByBackend) {
@@ -788,6 +954,16 @@ export default function HomePage() {
                 setImageOutputView(processedImages.length > 1 ? 'grid' : 0);
 
                 setHistory((prevHistory) => [newHistoryEntry, ...prevHistory]);
+                updateRequestLog(requestId, {
+                    status: 'success',
+                    completedAt: Date.now(),
+                    responseSummary: stringifyDebugDetails({
+                        imageCount: result.images.length,
+                        filenames: result.images.map((image: { filename: string }) => image.filename),
+                        usage: result.usage
+                    })
+                });
+                addRequestEvent(requestId, '图片结果已保存到本地状态');
             } else {
                 setLatestImageBatch(null);
                 throw new Error('API response did not contain valid image data or filenames.');
@@ -796,6 +972,12 @@ export default function HomePage() {
             durationMs = Date.now() - startTime;
             console.error(`API Call Error after ${durationMs}ms:`, err);
             const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+            updateRequestLog(requestId, {
+                status: 'error',
+                completedAt: Date.now(),
+                error: errorMessage
+            });
+            addRequestEvent(requestId, '请求失败', errorMessage);
             setError(errorMessage);
             setLatestImageBatch(null);
             setStreamingPreviewImages(new Map());
@@ -1053,8 +1235,8 @@ export default function HomePage() {
                     </div>
                 </div>
                 <div className='grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5'>
-                    <div className='relative flex h-[calc(100svh-9rem)] min-h-[520px] max-h-[760px] flex-col sm:min-h-[620px] lg:col-span-1 lg:h-[72vh] lg:max-h-none'>
-                        <div className={mode === 'generate' ? 'block h-full w-full' : 'hidden'}>
+                    <div className='relative flex min-h-0 flex-col lg:col-span-1 lg:h-[72vh] lg:min-h-[620px] lg:max-h-none'>
+                        <div className={mode === 'generate' ? 'block w-full lg:h-full' : 'hidden'}>
                             <GenerationForm
                                 onSubmit={handleApiCall}
                                 isLoading={isLoading}
@@ -1091,7 +1273,7 @@ export default function HomePage() {
                                 setPartialImages={setPartialImages}
                             />
                         </div>
-                        <div className={mode === 'edit' ? 'block h-full w-full' : 'hidden'}>
+                        <div className={mode === 'edit' ? 'block w-full lg:h-full' : 'hidden'}>
                             <EditingForm
                                 onSubmit={handleApiCall}
                                 isLoading={isLoading || isSendingToEdit}
@@ -1160,6 +1342,8 @@ export default function HomePage() {
                         />
                     </div>
                 </div>
+
+                <RequestInspector logs={requestLogs} onClear={() => setRequestLogs([])} />
 
                 <div className='min-h-[360px] md:min-h-[450px]'>
                     <HistoryPanel
