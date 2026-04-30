@@ -190,6 +190,10 @@ NEXT_PUBLIC_IMAGE_STORAGE_MODE=indexeddb
 - 如果某个 Key 曾经进入 Git 历史，应该立即在服务商后台撤销并重新生成。
 - 如果使用公开部署，务必设置 `APP_PASSWORD` 或接入你自己的鉴权。
 
+## 致谢
+
+本项目基于 [alasano/gpt-image-playground](https://github.com/alasano/gpt-image-playground) 修改和扩展而来。感谢原作者提供的项目基础与开源工作。
+
 ## License
 
 MIT
