@@ -5,7 +5,10 @@
 项目支持 `gpt-image-2`、`gpt-image-1.5`、`gpt-image-1` 和 `gpt-image-1-mini`，可使用 OpenAI 官方接口，也可配置兼容 OpenAI 协议的第三方接口。
 
 <p align="center">
-  <img src="./readme-images/interface.jpg" alt="项目界面" width="600"/>
+  <img src="./readme-images/interface.jpg" alt="Web 端界面" width="600"/>
+</p>
+<p align="center">
+  <img src="./readme-images/mobile.jpg" alt="移动端界面" width="300"/>
 </p>
 
 ## 双端能力
