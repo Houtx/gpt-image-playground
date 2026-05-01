@@ -23,10 +23,18 @@ type StreamingEvent = {
     error?: string;
 };
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_API_BASE_URL
-});
+function createOpenAIClient() {
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+        return null;
+    }
+
+    return new OpenAI({
+        apiKey,
+        baseURL: process.env.OPENAI_API_BASE_URL
+    });
+}
 
 const outputDir = path.resolve(process.cwd(), 'generated-images');
 
@@ -76,7 +84,8 @@ function sha256(data: string): string {
 export async function POST(request: NextRequest) {
     console.log('Received POST request to /api/images');
 
-    if (!process.env.OPENAI_API_KEY) {
+    const openai = createOpenAIClient();
+    if (!openai) {
         console.error('OPENAI_API_KEY is not set.');
         return NextResponse.json({ error: 'Server configuration error: API key not found.' }, { status: 500 });
     }
