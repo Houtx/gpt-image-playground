@@ -26,6 +26,8 @@ import {
     HardDrive,
     Database,
     FileImage,
+    Images,
+    PanelTopOpen,
     Trash2
 } from 'lucide-react';
 import Image from 'next/image';
@@ -71,6 +73,7 @@ function HistoryPanelImpl({
     const [openPromptDialogTimestamp, setOpenPromptDialogTimestamp] = React.useState<number | null>(null);
     const [openCostDialogTimestamp, setOpenCostDialogTimestamp] = React.useState<number | null>(null);
     const [isTotalCostDialogOpen, setIsTotalCostDialogOpen] = React.useState(false);
+    const [isMobileHistoryOpen, setIsMobileHistoryOpen] = React.useState(false);
     const [copiedTimestamp, setCopiedTimestamp] = React.useState<number | null>(null);
 
     const { totalCost, totalImages } = React.useMemo(() => {
@@ -99,7 +102,7 @@ function HistoryPanelImpl({
         }
     };
 
-    return (
+    const renderPanel = () => (
         <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
             <CardHeader className='flex flex-col items-start justify-between gap-3 border-b border-white/10 px-3 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4'>
                 <div className='flex min-w-0 flex-wrap items-center gap-2'>
@@ -514,6 +517,54 @@ function HistoryPanelImpl({
                 )}
             </CardContent>
         </Card>
+    );
+
+    return (
+        <>
+            <Card className='overflow-hidden rounded-lg border border-white/10 bg-black md:hidden'>
+                <CardHeader className='flex flex-row items-center justify-between gap-3 px-3 py-3'>
+                    <div className='min-w-0'>
+                        <CardTitle className='flex items-center gap-2 text-base font-medium text-white'>
+                            <Images className='h-4 w-4' />
+                            历史记录
+                        </CardTitle>
+                        <p className='mt-1 truncate text-xs text-white/50'>
+                            {history.length > 0
+                                ? `${history.length} 条记录 · ${totalImages} 张图片 · $${totalCost.toFixed(4)}`
+                                : '生成后的图片会显示在这里'}
+                        </p>
+                    </div>
+                    <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={() => setIsMobileHistoryOpen(true)}
+                        className='shrink-0 gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white'>
+                        <PanelTopOpen className='h-4 w-4' />
+                        打开
+                    </Button>
+                </CardHeader>
+            </Card>
+
+            <div className='hidden h-full md:block'>{renderPanel()}</div>
+
+            <Dialog open={isMobileHistoryOpen} onOpenChange={setIsMobileHistoryOpen}>
+                <DialogContent className='flex h-[88svh] max-w-[calc(100vw-1rem)] flex-col overflow-hidden border-neutral-800 bg-black p-0 text-white'>
+                    <DialogHeader className='border-b border-white/10 px-4 py-3 pr-12 text-left'>
+                        <DialogTitle className='flex items-center gap-2 text-base text-white'>
+                            <Images className='h-4 w-4' />
+                            历史记录
+                        </DialogTitle>
+                        <DialogDescription className='truncate text-white/50'>
+                            {history.length > 0
+                                ? `${history.length} 条记录 · ${totalImages} 张图片 · $${totalCost.toFixed(4)}`
+                                : '生成后的图片会显示在这里'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className='min-h-0 flex-1 overflow-hidden'>{renderPanel()}</div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

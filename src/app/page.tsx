@@ -1345,7 +1345,7 @@ export default function HomePage() {
 
                 <RequestInspector logs={requestLogs} onClear={() => setRequestLogs([])} />
 
-                <div className='min-h-[360px] md:min-h-[450px]'>
+                <div className='md:min-h-[450px]'>
                     <HistoryPanel
                         history={history}
                         onSelectImage={handleHistorySelect}
