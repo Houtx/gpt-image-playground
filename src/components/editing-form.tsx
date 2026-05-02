@@ -753,6 +753,7 @@ export function EditingForm({
                                         width={editOriginalImageSize.width}
                                         height={editOriginalImageSize.height}
                                         className='absolute top-0 left-0 h-full w-full cursor-crosshair'
+                                        style={{ touchAction: 'none' }}
                                         onMouseDown={startDrawing}
                                         onMouseMove={drawLine}
                                         onMouseUp={stopDrawing}
