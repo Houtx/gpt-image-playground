@@ -389,7 +389,7 @@ export function ImageOutput({
                                             sizes='(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
                                             unoptimized
                                         />
-                                        <span className='absolute right-2 top-2 rounded-md bg-background/75 p-1 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100'>
+                                        <span className='absolute right-2 top-2 rounded-md bg-background/75 p-1 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity group-active:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100'>
                                             <Maximize2 className='h-4 w-4' />
                                         </span>
                                     </button>
@@ -409,7 +409,7 @@ export function ImageOutput({
                                     className='max-h-full max-w-full object-contain'
                                     unoptimized
                                 />
-                                <span className='absolute right-3 top-3 rounded-md bg-background/75 p-1.5 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100'>
+                                <span className='absolute right-3 top-3 rounded-md bg-background/75 p-1.5 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity group-active:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100'>
                                     <Maximize2 className='h-4 w-4' />
                                 </span>
                             </button>

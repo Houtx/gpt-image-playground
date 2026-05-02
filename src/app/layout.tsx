@@ -1,7 +1,14 @@
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    viewportFit: 'cover'
+};
 
 const geistSans = Geist({
     variable: '--font-geist-sans',

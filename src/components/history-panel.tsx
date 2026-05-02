@@ -455,7 +455,7 @@ function HistoryPanelImpl({
                                                 }}>
                                                 <DialogTrigger asChild>
                                                     <Button
-                                                        className='h-8 w-8 bg-red-700/60 text-white hover:bg-red-600/60 sm:h-6 sm:w-6'
+                                                        className='h-9 w-9 bg-red-700/60 text-white hover:bg-red-600/60'
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             onDeleteItemRequest(item);

@@ -119,6 +119,8 @@
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   body {
     @apply min-h-screen overflow-x-hidden bg-background text-foreground;
@@ -146,6 +148,7 @@
 
   .app-topbar {
     @apply rounded-lg border border-border bg-card/85 p-4 shadow-sm backdrop-blur md:p-5;
+    padding-top: max(1rem, env(safe-area-inset-top));
   }
 
   .app-card {

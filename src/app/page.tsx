@@ -10,6 +10,7 @@ import { RequestInspector, type RequestLogEntry } from '@/components/request-ins
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { calculateApiCost, type CostDetails, type GptImageModel } from '@/lib/cost-utils';
 import { getPresetDimensions } from '@/lib/size-utils';
 import { db, type ImageRecord } from '@/lib/db';
@@ -105,6 +106,7 @@ export default function HomePage() {
     const [skipDeleteConfirmation, setSkipDeleteConfirmation] = React.useState<boolean>(false);
     const [itemToDeleteConfirm, setItemToDeleteConfirm] = React.useState<HistoryMetadata | null>(null);
     const [dialogCheckboxStateSkipConfirm, setDialogCheckboxStateSkipConfirm] = React.useState<boolean>(false);
+    const [isClearHistoryDialogOpen, setIsClearHistoryDialogOpen] = React.useState(false);
     const [requestLogs, setRequestLogs] = React.useState<RequestLogEntry[]>([]);
 
     const allDbImages = useLiveQuery<ImageRecord[] | undefined>(() => db.images.toArray(), []);
@@ -1027,29 +1029,27 @@ export default function HomePage() {
     );
 
     const handleClearHistory = React.useCallback(async () => {
-        const confirmationMessage =
-            effectiveStorageModeClient === 'indexeddb'
-                ? '确定要清空全部图片历史记录吗？IndexedDB 模式下也会永久删除本地存储的图片。此操作无法撤销。'
-                : '确定要清空全部图片历史记录吗？此操作无法撤销。';
+        setIsClearHistoryDialogOpen(true);
+    }, []);
 
-        if (window.confirm(confirmationMessage)) {
-            setHistory([]);
-            setLatestImageBatch(null);
-            setImageOutputView('grid');
-            setError(null);
+    const executeClearHistory = React.useCallback(async () => {
+        setIsClearHistoryDialogOpen(false);
+        setHistory([]);
+        setLatestImageBatch(null);
+        setImageOutputView('grid');
+        setError(null);
 
-            try {
-                localStorage.removeItem('openaiImageHistory');
+        try {
+            localStorage.removeItem('openaiImageHistory');
 
-                if (effectiveStorageModeClient === 'indexeddb') {
-                    await db.images.clear();
-                    blobUrlCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
-                    blobUrlCacheRef.current.clear();
-                }
-            } catch (e) {
-                console.error('Failed during history clearing:', e);
-                setError(`Failed to clear history: ${e instanceof Error ? e.message : String(e)}`);
+            if (effectiveStorageModeClient === 'indexeddb') {
+                await db.images.clear();
+                blobUrlCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+                blobUrlCacheRef.current.clear();
             }
+        } catch (e) {
+            console.error('Failed during history clearing:', e);
+            setError(`Failed to clear history: ${e instanceof Error ? e.message : String(e)}`);
         }
     }, []);
 
@@ -1208,6 +1208,26 @@ export default function HomePage() {
                 initialApiKey={nativeApiKey}
                 initialBaseUrl={nativeBaseUrl}
             />
+            <Dialog open={isClearHistoryDialogOpen} onOpenChange={setIsClearHistoryDialogOpen}>
+                <DialogContent className='sm:max-w-md'>
+                    <DialogHeader>
+                        <DialogTitle>清空历史记录</DialogTitle>
+                        <DialogDescription>
+                            {effectiveStorageModeClient === 'indexeddb'
+                                ? '确定要清空全部图片历史记录吗？IndexedDB 模式下也会永久删除本地存储的图片。此操作无法撤销。'
+                                : '确定要清空全部图片历史记录吗？此操作无法撤销。'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className='gap-2 sm:justify-end'>
+                        <Button type='button' variant='outline' size='sm' onClick={() => setIsClearHistoryDialogOpen(false)}>
+                            取消
+                        </Button>
+                        <Button type='button' variant='destructive' size='sm' onClick={executeClearHistory}>
+                            清空
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className='w-full max-w-screen-2xl space-y-4 md:space-y-5'>
                 <div className='app-topbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                     <div className='min-w-0'>
@@ -1279,6 +1299,7 @@ export default function HomePage() {
                                 isLoading={isLoading || isSendingToEdit}
                                 currentMode={mode}
                                 onModeChange={setMode}
+                                onError={setError}
                                 isPasswordRequiredByBackend={isPasswordRequiredByBackend}
                                 clientPasswordHash={clientPasswordHash}
                                 onOpenPasswordDialog={handleOpenPasswordDialog}

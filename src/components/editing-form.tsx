@@ -102,6 +102,7 @@ type EditingFormProps = {
     setEnableStreaming: React.Dispatch<React.SetStateAction<boolean>>;
     partialImages: 1 | 2 | 3;
     setPartialImages: React.Dispatch<React.SetStateAction<1 | 2 | 3>>;
+    onError?: (message: string) => void;
 };
 
 const RadioItemWithIcon = ({
@@ -172,7 +173,8 @@ export function EditingForm({
     enableStreaming,
     setEnableStreaming,
     partialImages,
-    setPartialImages
+    setPartialImages,
+    onError
 }: EditingFormProps) {
     const [firstImagePreviewUrl, setFirstImagePreviewUrl] = React.useState<string | null>(null);
 
@@ -384,7 +386,7 @@ export function EditingForm({
             const totalFiles = imageFiles.length + newFiles.length;
 
             if (totalFiles > maxImages) {
-                alert(`You can only select up to ${maxImages} images.`);
+                onError?.(`最多只能选择 ${maxImages} 张图片。`);
                 const allowedNewFiles = newFiles.slice(0, maxImages - imageFiles.length);
                 if (allowedNewFiles.length === 0) {
                     event.target.value = '';
@@ -429,7 +431,7 @@ export function EditingForm({
         }
 
         if (file.type !== 'image/png') {
-            alert('Invalid file type. Please upload a PNG file for the mask.');
+            onError?.('文件类型无效，请上传 PNG 格式的蒙版文件。');
             event.target.value = '';
             return;
         }
@@ -440,8 +442,8 @@ export function EditingForm({
 
         img.onload = () => {
             if (img.width !== editOriginalImageSize.width || img.height !== editOriginalImageSize.height) {
-                alert(
-                    `Mask dimensions (${img.width}x${img.height}) must match the source image dimensions (${editOriginalImageSize.width}x${editOriginalImageSize.height}).`
+                onError?.(
+                    `蒙版尺寸 (${img.width}x${img.height}) 必须与源图片尺寸 (${editOriginalImageSize.width}x${editOriginalImageSize.height}) 一致。`
                 );
                 URL.revokeObjectURL(objectUrl);
                 event.target.value = '';
@@ -467,7 +469,7 @@ export function EditingForm({
         };
 
         img.onerror = () => {
-            alert('Failed to load the uploaded mask image to check dimensions.');
+            onError?.('加载蒙版图片以检查尺寸失败。');
             URL.revokeObjectURL(objectUrl);
             event.target.value = '';
         };
@@ -478,11 +480,11 @@ export function EditingForm({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (imageFiles.length === 0) {
-            alert('Please select at least one image to edit.');
+            onError?.('请至少选择一张图片进行编辑。');
             return;
         }
         if (editDrawnPoints.length > 0 && !editGeneratedMaskFile && !editIsMaskSaved) {
-            alert('Please save the mask you have drawn before submitting.');
+            onError?.('请先保存已绘制的蒙版再提交。');
             return;
         }
         if (customSizeInvalid) {
@@ -696,7 +698,7 @@ export function EditingForm({
                                             type='button'
                                             variant='destructive'
                                             size='icon'
-                                            className='absolute top-0 right-0 h-5 w-5 translate-x-1/3 -translate-y-1/3 transform rounded-full bg-red-600 p-0.5 text-white hover:bg-red-700'
+                                            className='absolute top-0 right-0 h-7 w-7 translate-x-1/3 -translate-y-1/3 transform rounded-full bg-red-600 p-0.5 text-white hover:bg-red-700'
                                             onClick={() => handleRemoveImage(index)}
                                             aria-label={`Remove image ${index + 1}`}>
                                             <X className='h-3 w-3' />
